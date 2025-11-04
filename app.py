@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from models.user import User
 from database import db
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
+import bcrypt
 
 
 app = Flask(__name__)
@@ -15,12 +16,12 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 #Session <- conexão ativa
 
-
-
 @login_manager.user_loader
 def load_user(user_id):
   return User.query.get(user_id)
 
+
+#LOGIN---------------------------------------------------------------------------------------------
 @app.route('/login', methods=["POST"])
 def login():
   data = request.json
@@ -28,10 +29,9 @@ def login():
   password = data.get("password")
 
   if username and password:
-   # Login
     user = User.query.filter_by(username=username).first()
 
-    if user and user.password == password:
+    if user and bcrypt.checkpw(str.encode(password), str.encode(user.password)):
       login_user(user)
       print(current_user.is_authenticated)
       return jsonify({"message": "Autenticação realizada com sucesso!"})
@@ -39,9 +39,7 @@ def login():
   return jsonify({"message": "Credenciais inválidas"}), 400
 
 
-
-
-
+#LOGOUT---------------------------------------------------------------------------------------------
 @app.route('/logout', methods=['GET'])
 @login_required
 def logout():
@@ -49,10 +47,7 @@ def logout():
   return jsonify({"message": "Logout realizado com sucesso!"})
 
 
-
-
-
-
+#CREATE---------------------------------------------------------------------------------------------
 @app.route('/user', methods=["POST"])
 def create_user():
   data = request.json
@@ -60,7 +55,8 @@ def create_user():
   password = data.get("password")
 
   if username and password:
-    user = User(username=username, password=password, role='user')
+    hashed_pw = bcrypt.hashpw(str.encode(password), bcrypt.gensalt())
+    user = User(username=username, password=hashed_pw, role='user')
     db.session.add(user)
     db.session.commit()
     return jsonify({"message": "Usuario cadastrado com sucesso"})
@@ -68,8 +64,7 @@ def create_user():
   return jsonify({"message": "Dados invalidos"}), 400
 
 
-
-
+#READ---------------------------------------------------------------------------------------------
 @app.route('/user/<int:id_user>', methods=["GET"])
 @login_required
 def read_user(id_user):
@@ -81,9 +76,7 @@ def read_user(id_user):
   return jsonify({"message": "Usuario não encontrado"}), 404
 
 
-
-
-
+#UPDATE---------------------------------------------------------------------------------------------
 @app.route('/user/<int:id_user>', methods=["PUT"])
 @login_required
 def update_user(id_user):
@@ -95,7 +88,7 @@ def update_user(id_user):
 
 
   if user and data.get("password"):
-    user.password = data.get("password")
+    user.password = bcrypt.hashpw(str.encode(data.get("password")), bcrypt.gensalt())
     db.session.commit()
 
     return jsonify({"message": f"Usuário {id_user} atualizado com sucesso"})
@@ -103,9 +96,7 @@ def update_user(id_user):
   return jsonify({"message": "Usuario não encontrado"}), 404
 
 
-
-
-
+#DELETE---------------------------------------------------------------------------------------------
 @app.route('/user/<int:id_user>', methods=["DELETE"])
 @login_required
 def delete_user(id_user):
@@ -123,9 +114,6 @@ def delete_user(id_user):
     return jsonify({"message": f"Usuário {id_user} deletado com sucesso"})
   
   return jsonify({"message": "Usuario não encontrado"}), 404
-
-
-
 
 
 if __name__ == '__main__':
