@@ -6,7 +6,7 @@ from flask_login import LoginManager, login_user, current_user, logout_user, log
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "your_secret_key"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin123@127.0.0.1:3306/flask-crud'
 
 login_manager = LoginManager()
 db.init_app(app)
@@ -14,6 +14,8 @@ login_manager.init_app(app)
 #view login
 login_manager.login_view = 'login'
 #Session <- conexão ativa
+
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -37,11 +39,19 @@ def login():
   return jsonify({"message": "Credenciais inválidas"}), 400
 
 
+
+
+
 @app.route('/logout', methods=['GET'])
 @login_required
 def logout():
   logout_user()
   return jsonify({"message": "Logout realizado com sucesso!"})
+
+
+
+
+
 
 @app.route('/user', methods=["POST"])
 def create_user():
@@ -58,6 +68,8 @@ def create_user():
   return jsonify({"message": "Dados invalidos"}), 400
 
 
+
+
 @app.route('/user/<int:id_user>', methods=["GET"])
 @login_required
 def read_user(id_user):
@@ -67,6 +79,8 @@ def read_user(id_user):
     return {"username": user.username}
   
   return jsonify({"message": "Usuario não encontrado"}), 404
+
+
 
 
 
@@ -86,6 +100,8 @@ def update_user(id_user):
 
 
 
+
+
 @app.route('/user/<int:id_user>', methods=["DELETE"])
 @login_required
 def delete_user(id_user):
@@ -100,6 +116,9 @@ def delete_user(id_user):
     return jsonify({"message": f"Usuário {id_user} deletado com sucesso"})
   
   return jsonify({"message": "Usuario não encontrado"}), 404
+
+
+
 
 
 if __name__ == '__main__':
